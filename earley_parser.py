@@ -2,6 +2,7 @@ import os
 import copy
 import json
 import nltk
+import argparse
 
 
 class Station(object):
@@ -94,17 +95,17 @@ class EarleyParser:
 
     @staticmethod
     def _move_dot(station):
-        res_st = copy.deepcopy(station)
+        result_state = copy.deepcopy(station)
 
         dot_idx = -1
-        for idx, element in enumerate(res_st.out):
+        for idx, element in enumerate(result_state.out):
             if element == '.':
                 dot_idx = idx
-                del res_st.out[idx]
+                del result_state.out[idx]
                 break
 
-        res_st.out.insert(dot_idx+1, '.')
-        return res_st
+        result_state.out.insert(dot_idx+1, '.')
+        return result_state
 
     @staticmethod
     def is_expand(station_out):
@@ -147,7 +148,7 @@ class EarleyParser:
         return set(table_clone_1.stations) == set(table_clone.stations)
 
     # ----------- Main Methods -----------------
-    def get_table_by_idx(self, idx):
+    def _get_table_by_idx(self, idx):
         for table in self.tables:
             if table.idx == idx:
                 return table
@@ -220,7 +221,7 @@ class EarleyParser:
         self.tables.append(table_0)
 
     def _step_2(self):
-        table_0 = self.get_table_by_idx(0)
+        table_0 = self._get_table_by_idx(0)
         table_0_for_checking = copy.deepcopy(table_0)
         for station in table_0.stations:
             if self.is_backtrack(station.out):
@@ -228,7 +229,7 @@ class EarleyParser:
 
 
     def _step_3(self):
-        table_0 = self.get_table_by_idx(0)
+        table_0 = self._get_table_by_idx(0)
         table_0_for_checking = copy.deepcopy(table_0)
         for station in table_0.stations:
             if self.is_expand(station.out)[0]:
@@ -238,7 +239,7 @@ class EarleyParser:
 
     def _step_4(self, token, idx):
         terminals = self.word_type_dict[token]
-        prev_table = self.get_table_by_idx(idx - 1)
+        prev_table = self._get_table_by_idx(idx - 1)
         cur_table = Table(idx)
 
         for station in prev_table.stations:
@@ -250,17 +251,17 @@ class EarleyParser:
 
 
     def _step_5(self, idx):
-        cur_table = self.get_table_by_idx(idx)
+        cur_table = self._get_table_by_idx(idx)
         table_for_checking = copy.deepcopy(cur_table)
 
         for station in cur_table.stations:
             if self.is_backtrack(station.out):
-                backtrack_table = self.get_table_by_idx(station.idx)
+                backtrack_table = self._get_table_by_idx(station.idx)
                 self._backtrack(backtrack_table, cur_table, station.inp)
 
 
     def _step_6(self, idx):
-        cur_table = self.get_table_by_idx(idx)
+        cur_table = self._get_table_by_idx(idx)
         table_for_checking = copy.deepcopy(cur_table)
 
         for station in cur_table.stations:
@@ -269,12 +270,22 @@ class EarleyParser:
                 self._expand(self.grammar, cur_table, B)
 
 
+    def _build_tree(self):
+        pass
+
+
 def main():
     with open('./grammar/grammar1.txt','r') as fb:
         grammar = json.load(fb)
 
     grammar = Grammar(grammar)
-    ep = EarleyParser('a young man in the dirty class', grammar)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--sentence', type=str, default='a young man in the dirty class')
+
+    sentence = parser.parse_args().sentence
+
+    ep = EarleyParser(sentence, grammar)
     ep.parse()
 
 if __name__ == '__main__':
