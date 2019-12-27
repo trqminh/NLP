@@ -1,6 +1,7 @@
 import os
 import copy
 import json
+import nltk
 
 
 class Station(object):
@@ -27,11 +28,12 @@ class Table(object):
         self.stations = list()
 
     def __repr__(self):
-        repr_str = "Table {}: \n".format(self.idx)
+        repr_str = "="*40 + '\n'
         for station in self.stations:
             repr_str += station.__repr__()
             repr_str += '\n'
 
+        repr_str += "="*40 + '\n'
         return repr_str
 
 
@@ -50,14 +52,46 @@ class Grammar(Table):
 
 
 class EarleyParser:
-    def __init__(self, sentences, word_type_dict, grammar, tokens):
+    def __init__(self, sentences, grammar):
         self.sentences = sentences
-        self.word_type_dict = word_type_dict
+        self.tokens, self.word_type_dict = self.tokenize(sentences)
         self.grammar = grammar
-        self.tokens = tokens
         self.tables = list()
 
     # ---------------- Utilities -----------------
+    @staticmethod
+    def tokenize(sentences):
+        print('Tokenizing ....')
+        nltk.download('brown', quiet=True)
+        nltk.download('universal_tagset', quiet=True)
+
+        word_dictionary = nltk.corpus.brown.tagged_words(tagset='universal')
+
+        #
+        word_type_dict = {}
+        tokens = list(sentences.split(' '))
+
+        for token in tokens:
+            token = token.lower()
+            word_type_dict[token] = set()
+            for word in word_dictionary:
+                if word[0].lower() == token.lower():
+                    tag = word[1].lower()
+                    if tag == 'adp':
+                        tag = 'prep'
+
+                    if tag == 'pron':
+                        tag = 'noun'
+
+                    word_type_dict[token].add(tag)
+
+            word_type_dict[token] = list(word_type_dict[token])
+
+        print(tokens)
+        print(word_type_dict)
+        print()
+        return tokens, word_type_dict
+
     @staticmethod
     def _move_dot(station):
         res_st = copy.deepcopy(station)
@@ -156,6 +190,9 @@ class EarleyParser:
 
             table_0_clone = copy.deepcopy(self.tables[0])
 
+        print('Table 0: ')
+        print(self.tables[0])
+
         for idx, token in enumerate(self.tokens):
             self._step_4(token, idx+1)
             cur_table_clone = copy.deepcopy(self.tables[idx+1])
@@ -167,8 +204,15 @@ class EarleyParser:
 
                 cur_table_clone = copy.deepcopy(self.tables[idx+1])
 
+            print('Table {}: {} / {}'.format(idx+1, token, self.word_type_dict[token]))
+            print(self.tables[idx+1])
 
-        print(self.tables)
+        is_right_sent = False
+        for station in self.tables[len(self.tokens)].stations:
+            if self.is_backtrack(station.out) and station.inp == 'S':
+                is_right_sent = True
+
+        print('Right sentence' if is_right_sent else 'Wrong sentence')
 
     def _step_1(self):
         table_0 = Table(0)
@@ -193,13 +237,14 @@ class EarleyParser:
 
 
     def _step_4(self, token, idx):
-        terminal = self.word_type_dict[token][0]
+        terminals = self.word_type_dict[token]
         prev_table = self.get_table_by_idx(idx - 1)
         cur_table = Table(idx)
 
         for station in prev_table.stations:
-            if self.is_input(station.out, terminal):
-                self._input(station, cur_table)
+            for terminal in terminals:
+                if self.is_input(station.out, terminal):
+                    self._input(station, cur_table)
 
         self.tables.append(cur_table)
 
@@ -225,33 +270,11 @@ class EarleyParser:
 
 
 def main():
-    '''
-    grammar = {
-        'S':[['NP','VP'], ['NP','VP','PREPS']],
-        'NP':[['det','NP3']],
-        'NP3':[['adj', 'NP3'],['n'],['n','PREPS']],
-        'PREPS':[['prep', 'NP2']],
-        'NP2':[['det', 'NP3']],
-        'VP': [['vt'], ['vi']]
-    }
-    '''
-
     with open('./grammar/grammar1.txt','r') as fb:
         grammar = json.load(fb)
 
-    tokens = ['the', 'young', 'student', 'sat', 'in', 'the', 'class']
-    word_type_dict = {
-        'the': ['det'],
-        'young': ['adj'],
-        'student': ['n'],
-        'sat':['vt'],
-        'in':['prep'],
-        'the':['det'],
-        'class': ['n']
-    }
-
     grammar = Grammar(grammar)
-    ep = EarleyParser('', word_type_dict, grammar, tokens)
+    ep = EarleyParser('a young man in the dirty class', grammar)
     ep.parse()
 
 if __name__ == '__main__':
