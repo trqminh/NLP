@@ -1,0 +1,1 @@
+{"S": [["NP", "VP"], ["NP", "VP", "PREPS"]], "NP": [["det", "NP3"]], "NP3": [["adj", "NP3"], ["n"], ["n", "PREPS"]], "PREPS": [["prep", "NP2"]], "NP2": [["det", "NP3"]], "VP": [["vt"], ["vi"]]}
