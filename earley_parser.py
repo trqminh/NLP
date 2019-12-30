@@ -52,6 +52,12 @@ class Grammar(Table):
                 self.stations.append(st)
 
 
+class Node(object):
+    def __init__(self, value):
+        self.value = value
+        self.childs_list = list()
+
+
 class EarleyParser:
     def __init__(self, sentences, grammar):
         self.sentences = sentences
@@ -137,7 +143,6 @@ class EarleyParser:
     def is_backtrack(station_out):
         return station_out[-1] == '.'
 
-
     @staticmethod
     def is_overlap(station, table):
         table_clone = copy.deepcopy(table)
@@ -178,7 +183,6 @@ class EarleyParser:
                         dst_table.stations.append(dst_station)
 
                     break
-
 
     def parse(self):
         self._step_1()
@@ -227,7 +231,6 @@ class EarleyParser:
             if self.is_backtrack(station.out):
                 self._backtrack(table_0, table_0, station.inp)
 
-
     def _step_3(self):
         table_0 = self._get_table_by_idx(0)
         table_0_for_checking = copy.deepcopy(table_0)
@@ -235,7 +238,6 @@ class EarleyParser:
             if self.is_expand(station.out)[0]:
                 B = self.is_expand(station.out)[1]
                 self._expand(self.grammar, table_0, B)
-
 
     def _step_4(self, token, idx):
         terminals = self.word_type_dict[token]
@@ -249,7 +251,6 @@ class EarleyParser:
 
         self.tables.append(cur_table)
 
-
     def _step_5(self, idx):
         cur_table = self._get_table_by_idx(idx)
         table_for_checking = copy.deepcopy(cur_table)
@@ -258,7 +259,6 @@ class EarleyParser:
             if self.is_backtrack(station.out):
                 backtrack_table = self._get_table_by_idx(station.idx)
                 self._backtrack(backtrack_table, cur_table, station.inp)
-
 
     def _step_6(self, idx):
         cur_table = self._get_table_by_idx(idx)
@@ -269,9 +269,40 @@ class EarleyParser:
                 B = self.is_expand(station.out)[1]
                 self._expand(self.grammar, cur_table, B)
 
+    def build_tree(self):
+        root = Node('S')
+        self._get_node(root, len(self.tables) - 1, 0)
 
-    def _build_tree(self):
-        pass
+    def _find_list(self, value, table_idx):
+        result = list()
+        table = self._get_table_by_idx(table_idx)
+
+        if table == None:
+            return result
+
+        for station in table.stations:
+            if station.inp == value and station.out[-1] == '.':
+                result.append(station)
+
+        return result
+
+    def _get_node(self, node, table_idx, n_term):
+        list_station_found = self._find_list(node.value, table_idx)
+        print(table_idx, list_station_found)
+
+        for i, station in enumerate(list_station_found):
+            node.childs_list.append([])
+            for station_out in reversed(station.out[0:len(station.out)-1]):
+                if station_out.islower():
+                    print('I am in')
+                    n_term += 1
+                    node.childs_list[i].insert(0, station_out)
+                else:
+                    sub_node = Node(station_out)
+                    print('n_term: ', n_term)
+                    table_idx -= 2
+                    self._get_node(sub_node, table_idx, n_term)
+                    node.childs_list[i].insert(0, sub_node)
 
 
 def main():
@@ -281,12 +312,13 @@ def main():
     grammar = Grammar(grammar)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--sentence', type=str, default='a young man in the dirty class')
+    parser.add_argument('--sentence', type=str, default='the young student sat in the class')
 
     sentence = parser.parse_args().sentence
 
     ep = EarleyParser(sentence, grammar)
     ep.parse()
+    ep.build_tree()
 
 if __name__ == '__main__':
     main()
