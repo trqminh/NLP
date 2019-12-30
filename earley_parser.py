@@ -64,6 +64,7 @@ class EarleyParser:
         self.tokens, self.word_type_dict = self.tokenize(sentences)
         self.grammar = grammar
         self.tables = list()
+        self.n_terminals = 0  # for build tree purpose
 
     # ---------------- Utilities -----------------
     @staticmethod
@@ -271,7 +272,7 @@ class EarleyParser:
 
     def build_tree(self):
         root = Node('S')
-        self._get_node(root, len(self.tables) - 1, 0)
+        self._get_node(root, len(self.tables) - 1)
 
     def _find_list(self, value, table_idx):
         result = list()
@@ -286,23 +287,23 @@ class EarleyParser:
 
         return result
 
-    def _get_node(self, node, table_idx, n_term):
+    def _get_node(self, node, table_idx):
         list_station_found = self._find_list(node.value, table_idx)
-        print(table_idx, list_station_found)
 
         for i, station in enumerate(list_station_found):
             node.childs_list.append([])
             for station_out in reversed(station.out[0:len(station.out)-1]):
                 if station_out.islower():
-                    print('I am in')
-                    n_term += 1
+                    self.n_terminals += 1
                     node.childs_list[i].insert(0, station_out)
                 else:
+                    print(station_out)
                     sub_node = Node(station_out)
-                    print('n_term: ', n_term)
-                    table_idx -= 2
-                    self._get_node(sub_node, table_idx, n_term)
+                    table_idx = len(self.tables) - 1 - self.n_terminals
+                    print(table_idx)
+                    self._get_node(sub_node, table_idx)
                     node.childs_list[i].insert(0, sub_node)
+
 
 
 def main():
