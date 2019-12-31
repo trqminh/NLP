@@ -58,6 +58,18 @@ class Node(object):
         self.childs_list = list()
 
 
+class Tree(object):
+    def __init__(self):
+        self.nodes_in_level = list() # list of nodes
+
+    def __repr__(self):
+        for level, nodes in enumerate(self.nodes_in_level):
+            for node in nodes:
+                print('   {}   '.format(node.value))
+
+            print()
+
+
 class EarleyParser:
     def __init__(self, sentences, grammar):
         self.sentences = sentences
@@ -65,6 +77,7 @@ class EarleyParser:
         self.grammar = grammar
         self.tables = list()
         self.n_terminals = 0  # for build tree purpose
+        self.trees = [Tree()]
 
     # ---------------- Utilities -----------------
     @staticmethod
@@ -272,7 +285,7 @@ class EarleyParser:
 
     def build_tree(self):
         root = Node('S')
-        self._get_node(root, len(self.tables) - 1)
+        self._get_node(root, len(self.tables) - 1, 0)
 
     def _find_list(self, value, table_idx):
         result = list()
@@ -287,23 +300,24 @@ class EarleyParser:
 
         return result
 
-    def _get_node(self, node, table_idx):
+    def _get_node(self, node, table_idx, level):
         list_station_found = self._find_list(node.value, table_idx)
 
         for i, station in enumerate(list_station_found):
             node.childs_list.append([])
+
             for station_out in reversed(station.out[0:len(station.out)-1]):
+                print((station_out, level), end=' ')
                 if station_out.islower():
                     self.n_terminals += 1
                     node.childs_list[i].insert(0, station_out)
                 else:
-                    print(station_out)
                     sub_node = Node(station_out)
                     table_idx = len(self.tables) - 1 - self.n_terminals
-                    print(table_idx)
-                    self._get_node(sub_node, table_idx)
+                    #print(table_idx)
+                    self._get_node(sub_node, table_idx, level + 1)
                     node.childs_list[i].insert(0, sub_node)
-
+            print()
 
 
 def main():
