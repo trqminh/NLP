@@ -99,13 +99,13 @@ def minimum_edit_distance(target, source):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--w1', type=str, default='intention')
-    parser.add_argument('--w2', type=str, default='execution')
+    parser.add_argument('--src', type=str, default='intention')
+    parser.add_argument('--tar', type=str, default='execution')
 
-    w1 = parser.parse_args().w1
-    w2 = parser.parse_args().w2
+    src = parser.parse_args().src
+    tar = parser.parse_args().tar
 
-    minimum_edit_distance(w2, w1)
+    minimum_edit_distance(tar, src)
 
 if __name__ == '__main__':
     main()
